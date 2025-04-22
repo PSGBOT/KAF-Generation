@@ -405,7 +405,7 @@ class VisualGenomeParser(object):
 
         """
         To load a single image given the file name. Example:
-        
+
             image_file_name = "datasets/vg/VG_100K/2364731.jpg"
             if image_file_name in filenames:
                 image_idx = filenames.index(image_file_name)
@@ -465,7 +465,7 @@ def register_visual_genome():
                |---- ...
 
     """
-    DATASET_BASE_DIR = "datasets/vg/"
+    DATASET_BASE_DIR = "/home/cyl/Reconst/Data/vg/"
     IMG_DIR = os.path.join(DATASET_BASE_DIR, "VG_100K")
     ROI_DB_FILE = os.path.join(DATASET_BASE_DIR, "VG-SGG-with-attri.h5")
     DICT_FILE = os.path.join(DATASET_BASE_DIR, "VG-SGG-dicts-with-attri.json")
