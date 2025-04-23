@@ -2,7 +2,7 @@ _BASE_: "Quick-FCSGG-Base.yaml"
 MODEL:
   META_ARCHITECTURE: "CenterNet"
   HRNET:
-    WEIGHTS: "output/FasterR-CNN-HR32-3x.pth"
+    WEIGHTS: ""  # Empty string to train from scratch
     FINAL_STAGE_MULTISCALE: True
     UPSAMPLE_MODE: "bilinear"
 #    NORM: "FrozenBN"
