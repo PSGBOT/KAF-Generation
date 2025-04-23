@@ -183,7 +183,7 @@ def gaussian2D(diameters, sigma_factor=6):
 
 """
 
-These two functions are just a walk-through of 
+These two functions are just a walk-through of
 how to process each gaussian mask.
 
 def draw_gaussian(fmap, center, radius, k=1):
@@ -425,14 +425,33 @@ class GroundTruthGen(object):
         diameters = mask_right_bottom - mask_left_top  # order x, y
         gaussian_masks = gaussian2D(diameters)
         for i, gaussian_mask in enumerate(gaussian_masks):
-            masked_fmap = fmap[gt_classes[i],
-                          mask_left_top[i, 1]: mask_right_bottom[i, 1],
-                          mask_left_top[i, 0]: mask_right_bottom[i, 0]
-                          ]
-            masked_fmap = torch.max(masked_fmap, gaussian_mask * k)
-            fmap[gt_classes[i],
-            mask_left_top[i, 1]: mask_right_bottom[i, 1],
-            mask_left_top[i, 0]: mask_right_bottom[i, 0]] = masked_fmap
+            # Get the region from the feature map
+            y_start, y_end = mask_left_top[i, 1], mask_right_bottom[i, 1]
+            x_start, x_end = mask_left_top[i, 0], mask_right_bottom[i, 0]
+
+            # Check if the region is valid
+            if y_end <= y_start or x_end <= x_start or y_start >= height or x_start >= width or y_end <= 0 or x_end <= 0:
+                continue
+
+            # Adjust coordinates to be within bounds
+            y_start, y_end = max(0, y_start), min(height, y_end)
+            x_start, x_end = max(0, x_start), min(width, x_end)
+
+            # Get the corresponding region from the feature map
+            masked_fmap = fmap[gt_classes[i], y_start:y_end, x_start:x_end]
+
+            # Ensure gaussian_mask has the same shape as masked_fmap
+            if gaussian_mask.shape != masked_fmap.shape:
+                # Resize gaussian_mask to match masked_fmap
+                h, w = masked_fmap.shape
+                if h > 0 and w > 0:  # Ensure dimensions are positive
+                    gaussian_mask = gaussian_mask[:h, :w]
+
+            # Apply the maximum operation only if shapes match
+            if gaussian_mask.shape == masked_fmap.shape:
+                masked_fmap = torch.max(masked_fmap, gaussian_mask * k)
+                fmap[gt_classes[i], y_start:y_end, x_start:x_end] = masked_fmap
+
         fmap = F.pad(fmap, padding, value=0)
         return fmap
 
