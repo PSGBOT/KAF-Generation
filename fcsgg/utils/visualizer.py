@@ -15,7 +15,10 @@ __email__ = "onehothenry@gmail.com"
 import colorsys
 import logging
 import math
-from collections import Set
+try:
+    from collections.abc import Set
+except ImportError:
+    from collections import Set
 import numpy as np
 from enum import Enum, unique
 import cv2

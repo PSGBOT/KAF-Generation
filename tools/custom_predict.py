@@ -44,7 +44,7 @@ def setup():
     cfg.SOLVER.IMS_PER_BATCH = 1
     # cfg.MODEL.DEVICE = "cuda" #"cuda"
     cfg.MODEL.DEVICE = "cuda"
-    cfg.MODEL.WEIGHTS = "output/vg/fcsgg_hrnet_w48_dualhrfpn_5s_fixsize_640x1024_ms/model_90k.pth"
+    cfg.MODEL.WEIGHTS = "HRNetW48-5S-FPN×2.pth"
     cfg.DATASETS.TEST = ("vg_minitest",)
     cfg.freeze()
     return cfg
@@ -78,6 +78,47 @@ def save_gt_graph(data, out_dir, object_class_names, predicate_class_names):
 
 
 
+def save_pred_graph(output, out_dir, object_class_names, predicate_class_names, filename):
+    """Save predicted scene graph in JSON format for GraphViz visualization"""
+    import numpy as np  # Add import for numpy
+    scene_graph = output["scene_graph"].to("cpu")
+    
+    # Debug: Print available keys in scene_graph
+    print("Available keys in scene_graph:", scene_graph._fields.keys())
+    
+    # Extract predicted objects and relationships using available keys
+    pred_classes = scene_graph.get("pred_classes").numpy()
+    rel_inds = scene_graph.get("rel_inds").numpy()
+    rel_scores = scene_graph.get("rel_scores").numpy()
+    
+    # Get class names for objects
+    object_labels = [object_class_names[i] for i in pred_classes]
+    
+    # Prepare relationships - get predicate with highest score
+    relationships = []
+    for i in range(len(rel_inds)):
+        subj_idx = int(rel_inds[i][0])
+        obj_idx = int(rel_inds[i][1])
+        pred_idx = int(np.argmax(rel_scores[i]))
+        predicate_label = predicate_class_names[pred_idx]
+        relationships.append({
+            "predicate": predicate_label,
+            "object": obj_idx,
+            "subject": subj_idx
+        })
+    
+    # Create GraphViz-compatible JSON
+    pred_dict = {
+        "url": filename,
+        "objects": [{"name": label} for label in object_labels],
+        "attributes": [],
+        "relationships": relationships
+    }
+    
+    # Save prediction
+    with open(os.path.join(out_dir, "pred_graph.json"), "w") as f:
+        json.dump(pred_dict, f, indent=4)
+
 def visualize_detections(d, output, out_dir, dataset_metadata, image_format="pdf"):
     im = cv2.imread(d["file_name"])
     image_basename = os.path.basename(d["file_name"]).split(".")[0]
@@ -91,12 +132,16 @@ def visualize_detections(d, output, out_dir, dataset_metadata, image_format="pdf
     image_out_dir = os.path.join(out_dir, str(num_preds) + "-" + image_basename)
     if not os.path.exists(image_out_dir):
         os.makedirs(image_out_dir)
-    for i, out in enumerate(outs):
-        # plt.imshow(out.get_image())
-        # plt.show()
-        out.save(os.path.join(image_out_dir, "{}.{}".format(i, image_format)))
-    # to save the ground-truth scene graph as .json
-    # save_gt_graph(d, image_out_dir, object_class_names, predicate_class_names)
+        
+    # Save visualizations
+    # for i, out in enumerate(outs):
+    #     out.save(os.path.join(image_out_dir, "{}.{}".format(i, image_format)))
+    cv2.imwrite(os.path.join(image_out_dir, "original.jpg"), im)
+        
+    # Save prediction graph (JSON format)
+    object_class_names = dataset_metadata.thing_classes
+    predicate_class_names = dataset_metadata.predicate_classes
+    save_pred_graph(output, image_out_dir, object_class_names, predicate_class_names, os.path.basename(d["file_name"]))
 
 if __name__ == '__main__':
     cfg = setup()
@@ -104,21 +149,22 @@ if __name__ == '__main__':
     ###########    build model   ###########
 
     predictor = DefaultPredictor(cfg)
-    file_name = "tools/test4.jpg"
-    out_dir = "output/vg/quick_schedules/test/inference/vis"
+    # file_name = "tools/test1.jpg"
+    folder_name = "test_images/mixed_samples"
+    out_dir = "test_images/out"
     base_name = "results"
     dataset_name = "vg_minitest" # vg_debug
     out_dir = os.path.join(out_dir, base_name, dataset_name)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     dataset_metadata = MetadataCatalog.get(dataset_name)
-    with torch.no_grad():
-        d = {"file_name": file_name}
-        output = predictor(cv2.imread(file_name))
-        visualize_detections(d, output, out_dir, dataset_metadata)
+    image_files = [os.path.join(folder_name, f) 
+                  for f in os.listdir(folder_name) 
+                  if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    
+    for file_name in image_files:
+        with torch.no_grad():
+            d = {"file_name": file_name}
+            output = predictor(cv2.imread(file_name))
+            visualize_detections(d, output, out_dir, dataset_metadata)
             # break
-
-
-
-
-
