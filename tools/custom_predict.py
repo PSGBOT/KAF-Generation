@@ -93,7 +93,8 @@ def save_pred_graph(output, out_dir, object_class_names, predicate_class_names, 
     
     # Get class names for objects
     object_labels = [object_class_names[i] for i in pred_classes]
-    
+    bbox = scene_graph.get("pred_boxes")
+    bbox = bbox.tensor.tolist()
     # Prepare relationships - get predicate with highest score
     relationships = []
     for i in range(len(rel_inds)):
@@ -111,6 +112,7 @@ def save_pred_graph(output, out_dir, object_class_names, predicate_class_names, 
     pred_dict = {
         "url": filename,
         "objects": [{"name": label} for label in object_labels],
+        "bbox": bbox,
         "attributes": [],
         "relationships": relationships
     }
