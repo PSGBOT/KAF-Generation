@@ -8,6 +8,7 @@ datasets/vg/*
 
 # output dir
 output
+test_images
 instant_test_output
 inference_test_output
 .run_*

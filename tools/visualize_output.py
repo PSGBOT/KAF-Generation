@@ -44,7 +44,7 @@ def setup():
     cfg.SOLVER.IMS_PER_BATCH = 1
     # cfg.MODEL.DEVICE = "cuda" #"cuda"
     cfg.MODEL.DEVICE = "cuda"
-    cfg.MODEL.WEIGHTS = "output/vg/fcsgg_hrnet_w48_dualhrfpn_5s_fixsize_640x1024_ms/model_90k.pth"
+    cfg.MODEL.WEIGHTS = "HRNetW48-5S-FPN×2.pth"
     cfg.DATASETS.TEST = ("vg_minitest",)
     cfg.freeze()
     return cfg
